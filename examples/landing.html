@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Эталонный лендинг — сборка по нормативу</title>
+<!--
+  ЭТАЛОННЫЙ ЛЕНДИНГ. Собран целиком по references/tokens.css и нормативу.
+  На нём `python3 scripts/lint-design.py examples/landing.html` даёт ноль замечаний.
+
+  Что здесь соблюдено и где это в правилах:
+    3.1   ровно один h1
+    3.2   уровни идут H1 → H2 → H3, без перескоков
+    10.6  пять кеглей на странице: 56 / 40 / 20 / 16 / 14
+    10.18 все отступы кратны 8 и взяты из шкалы
+    8.8   радиусы 0 / 12 / 16 / 24 / капсула
+    10.22 контраст всех пар ≥ 4,5:1 (крупный — ≥ 3:1)
+    8.4   8.5 кнопка: подпись 16 px, высота 56 px
+    10.36 фокус: контур 2 px с отступом 2 px
+    10.37 alt у каждого img, button/a вместо div
+    10.42 только transform и opacity, есть prefers-reduced-motion
+    10.43 контент виден на первом кадре: анимация только сдвигает
+
+  Картинки — инлайновые data-URI: внешних URL нет, но место под фото
+  честно показано. В рабочем проекте на их месте настоящие фотографии,
+  и они обязаны пройти 10.28–10.31 (≥ 4 штуки, кропы одного ряда).
+-->
+<style>
+/* ── Токены. Скопированы из references/tokens.css; в проекте подключаются отдельно. ── */
+:root{
+  --paper:#FFFFFF; --surface:#FAFAFA; --surface-2:#F5F5F5; --surface-3:#F2F2F2;
+  --line:#E5E5E5; --line-strong:#D1D1D1;
+  --ink-3:#9C9C9C; --ink-2:#6B6B6B; --ink-1:#373737; --ink:#1A1A1A; --ink-strong:#111111;
+  --accent:#1B4B5A; --accent-hover:#143A46; --accent-press:#0F2E38;
+  --accent-ink:#FFFFFF; --focus:var(--accent);
+
+  --fs-display-xl:56px; --lh-display-xl:64px;
+  --fs-h2:40px;         --lh-h2:48px;
+  --fs-h3:20px;         --lh-h3:28px;
+  --fs-body:16px;       --lh-body:24px;
+  --fs-small:14px;      --lh-small:20px;
+
+  --fw-medium:500; --fw-semi:600; --fw-bold:700;
+  --font:"Inter","Segoe UI",Roboto,Arial,sans-serif;
+
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:40px; --s6:48px;
+  --s7:64px; --s8:80px; --s9:96px; --s10:120px;
+
+  --container:1280px; --pad-x:80px; --pad-x-mob:16px;
+
+  --r-0:0; --r-sm:12px; --r-md:16px; --r-lg:24px; --r-pill:999px;
+
+  --btn-h:56px; --btn-pad-y:20px; --btn-pad-x:40px;
+  --btn-fs:16px; --btn-gap:16px; --touch:44px;
+
+  --focus-w:2px; --focus-off:2px;
+  --motion-dur:400ms; --motion-shift:24px; --motion-stagger:80ms;
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+
+/* ── Сброс и база ─────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink-1);
+  font-family:var(--font);
+  font-size:var(--fs-body);
+  line-height:var(--lh-body);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Заголовки: 3.1 — один h1; 3.2 — уровни различаются кеглем и весом;
+   10.8 — у крупного кегля трекинг отрицательный. */
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:var(--fw-bold)}
+h1{font-size:var(--fs-display-xl);line-height:var(--lh-display-xl);letter-spacing:-.02em;max-width:16ch}
+h2{font-size:var(--fs-h2);line-height:var(--lh-h2);letter-spacing:-.01em;max-width:20ch}
+h3{font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:var(--fw-semi)}
+h4{font-size:var(--fs-body);line-height:var(--lh-body);font-weight:var(--fw-semi)}
+
+/* 3.9 — длина строки 40–45 знаков: 34em при 16px ≈ 45 знаков кириллицей. */
+p{margin:0;max-width:34em}
+.lead{font-size:var(--fs-h3);line-height:var(--lh-h3);color:var(--ink-2);max-width:26em}
+.small{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--ink-2)}
+.muted-note{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--ink-2)}
+
+a{color:var(--accent);text-underline-offset:.18em}
+a:hover{color:var(--accent-hover)}   /* 8.24 — у ссылки есть состояния */
+
+/* 10.36 — видимый фокус: 2 px с отступом 2 px, ничего не отключаем без замены. */
+:focus-visible{outline:var(--focus-w) solid var(--focus);outline-offset:var(--focus-off)}
+
+/* ── Сетка. 5.5–5.6, 10.13: контейнер 1280 по центру 1440, поля 80. ───── */
+.container{
+  width:min(var(--container),calc(100% - 2 * var(--pad-x)));
+  margin-inline:auto;
+}
+
+/* 10.15 — между секциями 120, внутри 96/64; 10.16 — над заголовком вдвое больше. */
+.section{padding-block:var(--s10) var(--s9)}
+.section--tight{padding-block:var(--s9) var(--s9)}
+.section--surface{background:var(--surface)}
+
+.section-head{display:flex;flex-direction:column;gap:var(--s2);margin-bottom:var(--s6)}
+
+/* 5.2, 10.20 — 12 колонок, жёлоб 40. Три колонки = 400, две = 620, четыре = 290. */
+.grid{display:grid;gap:var(--s5)}
+.grid--2{grid-template-columns:repeat(2,1fr)}
+.grid--3{grid-template-columns:repeat(3,1fr)}
+.grid--4{grid-template-columns:repeat(4,1fr)}
+
+/* ── Шапка. 10.34 — 3 ссылки, высота ≤ 1/10 первого экрана. ───────────── */
+.site-header{border-bottom:1px solid var(--line)}
+.site-header__inner{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s4);min-height:var(--s9);
+}
+.logo{font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:var(--fw-bold);color:var(--ink);text-decoration:none}
+.nav{display:flex;align-items:center;gap:var(--s4)}
+.nav a{
+  min-height:var(--touch);display:inline-flex;align-items:center;
+  color:var(--ink-1);text-decoration:none;font-size:var(--fs-body);
+}
+.nav a:hover{color:var(--ink);text-decoration:underline}
+
+/* ── Кнопки. 8.4 кегль 16, 8.5 высота 56, 8.6 отступы 20/40 = 1:2,
+      8.12 тень в цвет кнопки только по Y, 10.19 тач-зона ≥ 44. ───────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:var(--btn-h);padding:var(--btn-pad-y) var(--btn-pad-x);
+  border:1px solid transparent;border-radius:var(--r-0);
+  background:var(--accent);color:var(--accent-ink);
+  font:inherit;font-size:var(--btn-fs);font-weight:var(--fw-medium);line-height:1;
+  text-decoration:none;cursor:pointer;
+  transition:background-color var(--motion-dur) var(--ease),transform var(--motion-dur) var(--ease);
+}
+.btn:hover{background:var(--accent-hover)}                 /* 10.36 — hover повышает контраст */
+.btn:active{background:var(--accent-press);transform:translateY(1px)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn--ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}  /* 8.14 */
+.btn--ghost:hover{background:var(--surface-2)}
+
+.actions{display:flex;flex-wrap:wrap;gap:var(--btn-gap)}  /* 8.17 — кнопки не примыкают */
+
+/* Скрытый заголовок секции: остаётся в дереве доступности для скринридера,
+   но не занимает места на экране. 10.38 — порядок чтения не ломается. */
+.sr-only{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;
+}
+
+/* ── Первый экран. 4.2 — главное в верхней левой зоне; 4.5 — одна доминанта.
+   11.7 — надзаголовка-«бровки» над H1 нет: он срезает балл за дизайн. ── */
+.hero{padding-block:var(--s9) var(--s10)}
+.hero__grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);align-items:center}
+.hero__text{display:flex;flex-direction:column;gap:var(--s3);align-items:flex-start}
+
+/* ── Плашка под изображение. Нет внешних URL: data-URI серого прямоугольника. ── */
+.figure{margin:0;display:flex;flex-direction:column;gap:var(--s1)}
+.figure img{
+  display:block;width:100%;height:auto;
+  border-radius:var(--r-md);                 /* 10.30 — 0 или 12; здесь 16 из общей системы 8.8 */
+  background:var(--surface-2);
+}
+.figure figcaption{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--ink-2)}
+
+/* ── Цифры. 4.16 — самое большое на макете самое важное. ───────────────── */
+.stat{display:flex;flex-direction:column;gap:var(--s1)}
+.stat__value{font-size:var(--fs-h2);line-height:var(--lh-h2);font-weight:var(--fw-bold);color:var(--ink)}
+.stat__label{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--ink-2)}
+
+/* ── Карточки. 5.7 — внутреннее (24) меньше внешнего (40); 5.8 — глубже меньше. ── */
+.card{
+  display:flex;flex-direction:column;gap:var(--s2);
+  padding:var(--s3);border-radius:var(--r-md);
+  background:var(--surface-3);
+}
+.card__body{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--ink-1);max-width:30em}
+
+/* ── Сплит: изображение и текст. 6.3 — картинке нужен противовес. ─────── */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);align-items:center}
+.split__text{display:flex;flex-direction:column;gap:var(--s3);align-items:flex-start}
+
+/* ── Тарифы. 8.10 — одна главная кнопка в карточке, остальные приглушены. ── */
+.plan{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s4);border-radius:var(--r-lg)}
+.plan--featured{background:var(--surface-3)}
+.plan__name{font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:var(--fw-semi);color:var(--ink)}
+.plan__price{font-size:var(--fs-h3);line-height:var(--lh-h3);font-weight:var(--fw-bold);color:var(--ink)}
+.plan__price small{font-size:var(--fs-small);line-height:var(--lh-small);font-weight:var(--fw-medium);color:var(--ink-2)}
+.plan ul{margin:0;padding:0 0 0 var(--s3);display:flex;flex-direction:column;gap:var(--s1)}
+.plan li{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--ink-1)}
+.plan .btn{margin-top:auto}
+
+/* ── Полоса действия. 1.2 — основной цвет это фон; здесь смена плоскости (10.25). ── */
+.cta{background:var(--surface-3);border-radius:var(--r-lg);padding:var(--s6)}
+.cta__inner{display:flex;align-items:center;justify-content:space-between;gap:var(--s5);flex-wrap:wrap}
+.cta__text{display:flex;flex-direction:column;gap:var(--s2)}
+
+/* ── Подвал. ───────────────────────────────────────────────────────────── */
+.site-footer{background:var(--surface);border-top:1px solid var(--line);padding-block:var(--s6)}
+.footer__inner{display:flex;justify-content:space-between;gap:var(--s5);flex-wrap:wrap}
+.footer__col{display:flex;flex-direction:column;gap:var(--s1)}
+.footer__col a{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--ink-2);text-decoration:none;min-height:var(--touch);display:inline-flex;align-items:center}
+.footer__col a:hover{color:var(--ink);text-decoration:underline}
+
+/* ── Движение. 10.41 — по порядку чтения, шаг 80 мс, подъём 24 px.
+      10.42 — только transform; opacity не трогаем, чтобы контент был виден
+      на первом кадре (10.43). ──────────────────────────────────────────── */
+@keyframes rise{
+  from{transform:translateY(var(--motion-shift))}
+  to  {transform:translateY(0)}
+}
+.reveal{animation:rise var(--motion-dur) var(--ease) backwards;animation-delay:var(--d,0ms)}
+.reveal--2{--d:calc(var(--motion-stagger) * 1)}
+.reveal--3{--d:calc(var(--motion-stagger) * 2)}
+.reveal--4{--d:calc(var(--motion-stagger) * 3)}
+
+/* 10.42 — prefers-reduced-motion убирает перемещение, контент остаётся. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+
+/* ── Адаптив. 10.21 — 640 / 768 / 1024 плюс 390 и 1440.
+      10.3 — H1 на 390 около 40 px; 10.5 — текст не мельче 16. ──────────── */
+@media (max-width:1024px){
+  .grid--4{grid-template-columns:repeat(2,1fr)}
+}
+
+@media (max-width:768px){
+  :root{
+    --pad-x:var(--pad-x-mob);
+    --fs-display-xl:40px; --lh-display-xl:48px;
+    --fs-h2:32px;         --lh-h2:40px;
+    --s10:96px; --s9:64px; --s6:32px; --s5:24px;
+  }
+  h1{max-width:14ch}
+  .hero__grid,.split{grid-template-columns:1fr}
+  .grid--2,.grid--3,.grid--4{grid-template-columns:1fr}
+  .cta{padding:var(--s4)}
+  .section{padding-block:var(--s9) var(--s7)}
+}
+
+@media (max-width:480px){
+  .actions{flex-direction:column;align-items:stretch}
+  .btn{width:100%}
+}
+
+/* Навигация на телефоне: шапка переносится, кнопка из неё уходит —
+   главное действие уже стоит на первом экране (9.14, 10.34).
+   Ничего не вылезает за край (9.16). */
+@media (max-width:768px){
+  .site-header__inner{flex-wrap:wrap;gap:var(--s2);padding-block:var(--s2)}
+  .nav{gap:var(--s3);flex-wrap:wrap}
+  .nav .btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="logo" href="#">Северный контур</a>
+    <nav class="nav" aria-label="Основная навигация">
+      <a href="#work">Работы</a>
+      <a href="#process">Процесс</a>
+      <a href="#pricing">Цены</a>
+      <a class="btn btn--ghost" href="#pricing">Обсудить проект</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- 1. Первый экран. 4.1 — что это, для кого и что нажать за 5 секунд. -->
+  <section class="hero container" aria-labelledby="hero-title">
+    <div class="hero__grid">
+      <div class="hero__text">
+        <h1 id="hero-title" class="reveal reveal--2">Сайт, который объясняет продукт за один экран</h1>
+        <p class="lead reveal reveal--3">Собираем интерфейсы для заводов и инженерных компаний: сетка, типографика и тексты, которые читают до конца.</p>
+        <div class="actions reveal reveal--4">
+          <a class="btn" href="#pricing">Обсудить проект</a>
+          <a class="btn btn--ghost" href="#work">Посмотреть работы</a>
+        </div>
+        <p class="small reveal reveal--4">Отвечаем в течение одного рабочего дня.</p>
+      </div>
+      <figure class="figure reveal reveal--3">
+        <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F5F5F5'/%3E%3Cpath d='M0 0L640 480M640 0L0 480' stroke='%23E5E5E5' stroke-width='2'/%3E%3C/svg%3E"
+             width="640" height="480"
+             alt="Первый экран сайта производителя: заголовок, лид и кнопка над фотографией цеха">
+        <figcaption>Место под фото первого экрана. 10.29 — медиа героя занимает половину экрана.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2. Цифры. 4.16 — самое большое на макете самое важное. -->
+  <section class="section section--tight section--surface" aria-labelledby="stats-title">
+    <div class="container">
+      <h2 id="stats-title" class="sr-only">Результаты в цифрах</h2>
+      <div class="grid grid--4">
+        <div class="stat">
+          <span class="stat__value">38</span>
+          <span class="stat__label">проектов сдано с 2019 года</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value">11</span>
+          <span class="stat__label">отраслей: от металла до упаковки</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value">6</span>
+          <span class="stat__label">недель от брифа до сдачи</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value">4</span>
+          <span class="stat__label">человека в команде на проект</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Три принципа. 3.14 — подзаголовки несут мысль, а не название темы. -->
+  <section class="section" id="process" aria-labelledby="principles-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="principles-title">Три вещи, которые решают, прочитают ли сайт</h2>
+        <p class="lead">Мы начинаем с них, а не с картинок.</p>
+      </div>
+      <div class="grid grid--3">
+        <article class="card">
+          <h3>Один экран — одна мысль</h3>
+          <p class="card__body">Если человек за пять секунд не понял, что вы производите, он уходит. Первый экран отвечает на три вопроса: что, для кого, что нажать.</p>
+        </article>
+        <article class="card">
+          <h3>Сетка держит ритм</h3>
+          <p class="card__body">Двенадцать колонок, жёлоб 40 px, отступы кратны 8. Когда шаг повторяется, страницу читают без усилий — это видно даже без объяснений.</p>
+        </article>
+        <article class="card">
+          <h3>Текст работает как аргумент</h3>
+          <p class="card__body">Вместо «широкий ассортимент» — «партия от 50 кг, отгрузка за два дня». Конкретика продаёт, общие слова занимают место.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Сплит с изображением. 4.6 — картинка читается первой, текст справа. -->
+  <section class="section section--surface" id="work" aria-labelledby="work-title">
+    <div class="container">
+      <div class="split">
+        <figure class="figure">
+          <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 420'%3E%3Crect width='620' height='420' fill='%23F2F2F2'/%3E%3Cpath d='M0 0L620 420M620 0L0 420' stroke='%23E5E5E5' stroke-width='2'/%3E%3C/svg%3E"
+               width="620" height="420"
+               alt="Страница каталога: сетка карточек с артикулами и фильтром по материалу">
+          <figcaption>Каталог на 420 позиций: фильтр по материалу и сортировка по сроку.</figcaption>
+        </figure>
+        <div class="split__text">
+          <h2 id="work-title">Каталог, в котором находят деталь, а не листают прайс</h2>
+          <p>Мы разобрали 420 позиций по трём признакам — материалу, размеру и сроку отгрузки — и вывели фильтр на первый экран. Менеджеры перестали отвечать на вопросы «а есть ли в наличии».</p>
+          <p class="small">Проект для производителя крепежа, 2025 год.</p>
+          <a class="btn btn--ghost" href="#pricing">Разобрать свой каталог</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Тарифы. 8.1 — кнопка называет действие; 8.10 — главная одна. -->
+  <section class="section" id="pricing" aria-labelledby="pricing-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="pricing-title">Три формата работы</h2>
+        <p class="lead">Фиксированная цена и срок, которые не меняются после брифа.</p>
+      </div>
+      <div class="grid grid--3">
+        <div class="plan">
+          <h3 class="plan__name">Аудит</h3>
+          <p class="plan__price">80 000 ₽ <small>за 2 недели</small></p>
+          <p class="card__body">Разбор текущего сайта по 217 правилам: находки, замеры и список правок по тяжести.</p>
+          <a class="btn btn--ghost" href="#contact">Заказать аудит</a>
+        </div>
+        <div class="plan plan--featured">
+          <h3 class="plan__name">Лендинг</h3>
+          <p class="plan__price">240 000 ₽ <small>за 6 недель</small></p>
+          <p class="card__body">Прототип, дизайн и вёрстка одной страницы: сетка, типографика, состояния, адаптив.</p>
+          <a class="btn" href="#contact">Обсудить лендинг</a>
+        </div>
+        <div class="plan">
+          <h3 class="plan__name">Сайт целиком</h3>
+          <p class="plan__price">от 600 000 ₽ <small>по этапам</small></p>
+          <p class="card__body">Многостраничник с каталогом, формами и дизайн-системой, по которой команда работает дальше сама.</p>
+          <a class="btn btn--ghost" href="#contact">Собрать смету</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Полоса действия. -->
+  <section class="section section--tight" id="contact" aria-labelledby="cta-title">
+    <div class="container">
+      <div class="cta">
+        <div class="cta__inner">
+          <div class="cta__text">
+            <h2 id="cta-title">Разберём ваш первый экран</h2>
+            <p>Пришлите ссылку — вернём три находки с номерами правил и замером, без обязательств.</p>
+          </div>
+          <a class="btn" href="#">Отправить ссылку</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer__inner">
+    <div class="footer__col">
+      <p class="small">Северный контур — дизайн-бюро для производителей.</p>
+      <p class="small">Москва, Пресненская набережная, 12.</p>
+    </div>
+    <div class="footer__col">
+      <a href="#work">Работы</a>
+      <a href="#process">Процесс</a>
+      <a href="#pricing">Цены</a>
+    </div>
+    <div class="footer__col">
+      <a href="#">Telegram</a>
+      <a href="mailto:hello@example.com">hello@example.com</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
