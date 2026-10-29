@@ -244,7 +244,9 @@ a:hover{color:var(--accent-hover)}   /* 8.24 — у ссылки есть сос
   .hero__grid,.split{grid-template-columns:1fr}
   .grid--2,.grid--3,.grid--4{grid-template-columns:1fr}
   .cta{padding:var(--s4)}
-  .section{padding-block:var(--s9) var(--s7)}
+  /* 10.15 — на телефоне зазор между секциями 72–112. Две соседние секции
+     складывают свои отступы, поэтому 48 + 48 = 96, в норме. */
+  .section,.hero{padding-block:48px}
 }
 
 @media (max-width:480px){

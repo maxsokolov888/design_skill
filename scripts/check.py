@@ -4,7 +4,7 @@
 перепроверяет по скриншоту и оставляет только подтверждённое.
 
 Номера правил — из references/ (RULES.md): 1.1, 1.14, 1.15, 2.1, 3.1, 3.2, 3.5,
-3.9, 3.10, 3.13, 3.15, 4/5.1, 5.3, 5.4, 8.4, 8.7, 8.8/9.11.
+3.9, 3.10, 3.13, 3.15, 4/5.1, 5.3, 5.4, 8.4, 8.7, 8.8/9.11, 10.15.
 Вход — measure.json, который пишет audit.js."""
 import json, sys, re, os
 from collections import Counter
@@ -129,10 +129,22 @@ def rules(r):
         if len(set(gaps)) > 2 and max(gaps) - min(gaps) > 24:
             out.append(('5.3 / 5.4', f'Отступы между секциями разные: {gaps[:8]} — нужен единый шаг.'))
 
-    # 5.7 близость внутри/снаружи (по секциям)
-    for s in d.get('sections', [])[:8]:
-        if s['pt'] and s['pb'] and s['pt'] != s['pb'] and abs(s['pt'] - s['pb']) > 16:
-            out.append(('5.3', f'У секции «{s["label"][:30]}» верх {s["pt"]} px и низ {s["pb"]} px — разнобой без причины.'))
+    # 10.15 величина зазора между секциями: 120–240 на десктопе, 72–112 на телефоне.
+    # Верх и низ у одной секции намеренно разные (10.16), поэтому смотрим именно зазор.
+    for i, g in enumerate(gaps):
+        if g and not (120 <= g <= 240):
+            lbl = ps[i][3][:30] if i < len(ps) else ''
+            out.append(('10.15', f'Зазор между секциями {g} px после «{lbl}»: норма 120–240 на десктопе.'))
+            break
+    msec = (r.get('mobile') or {}).get('sections') or []
+    mgaps = []
+    for i in range(len(msec) - 1):
+        g = (msec[i].get('pb') or 0) + (msec[i + 1].get('pt') or 0)
+        if g > 0:
+            mgaps.append(g)
+    for i, g in enumerate(mgaps):
+        if g and not (72 <= g <= 112):
+            out.append(('10.15', f'Зазор между секциями на телефоне {g} px: норма 72–112.'))
             break
 
     # 4.x контейнер: кластеризуем ширины, ругаемся только на реально разные сетки

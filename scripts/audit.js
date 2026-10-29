@@ -8,6 +8,10 @@ const path = require('path');
 const url = process.argv[2];
 const out = process.argv[3] || 'shots/site';
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
+if (!url) {
+  console.error('audit.js: не указан адрес.\n  node audit.js <url|файл.html> [папка]');
+  process.exit(2);
+}
 fs.mkdirSync(out, { recursive: true });
 
 const collect = () => {
@@ -112,10 +116,13 @@ const collect = () => {
   for (const [name, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]]) {
     const page = await browser.newPage();
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
+    let loaded = true;
     try {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
     } catch (e) {
-      try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }); } catch (e2) {}
+      loaded = false;
+      try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }); loaded = true; }
+      catch (e2) { console.error(`audit.js: страницу не удалось открыть (${name}): ${e2.message}`); }
     }
     await new Promise(r => setTimeout(r, 2500));
     await page.evaluate(() => { window.scrollTo(0, document.body.scrollHeight); });
@@ -126,11 +133,23 @@ const collect = () => {
     try {
       await page.screenshot({ path: path.join(out, `${name}-full.png`), fullPage: true });
     } catch (e) {}
-    report[name] = await page.evaluate(collect);
+    if (!loaded) { await page.close(); continue; }
+    const got = await page.evaluate(collect);
+    // Пустой замер опаснее ошибки: check.py примет его за страницу без заголовков.
+    if (!got.docHeight || got.docHeight <= 100) {
+      console.error(`audit.js: страница открылась, но ничего не отдала (${name}): проверь адрес и что файл существует.`);
+      await page.close();
+      continue;
+    }
+    report[name] = got;
     await page.close();
   }
   // тексты страницы для оценки иерархии и длины строк
-  fs.writeFileSync(path.join(out, 'measure.json'), JSON.stringify(report, null, 2));
   await browser.close();
-  console.log('готово:', out);
+  if (!report.desktop) {
+    console.error('audit.js: замер не сделан — measure.json не записан.');
+    process.exit(3);
+  }
+  fs.writeFileSync(path.join(out, 'measure.json'), JSON.stringify(report, null, 2));
+  console.log('готово:', out, '—', path.join(out, 'measure.json'));
 })();
