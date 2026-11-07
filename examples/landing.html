@@ -93,7 +93,8 @@ a:hover{color:var(--accent-hover)}   /* 8.24 — у ссылки есть сос
 /* 10.36 — видимый фокус: 2 px с отступом 2 px, ничего не отключаем без замены. */
 :focus-visible{outline:var(--focus-w) solid var(--focus);outline-offset:var(--focus-off)}
 
-/* ── Сетка. 5.5–5.6, 10.13: контейнер 1280 по центру 1440, поля 80. ───── */
+/* ── Сетка. Пресет библиотеки, не единственный: контейнер 1280 по центру
+   1440, поля 80. Остальные размеры — references/rhythm.md. ─────────────── */
 .container{
   width:min(var(--container),calc(100% - 2 * var(--pad-x)));
   margin-inline:auto;
